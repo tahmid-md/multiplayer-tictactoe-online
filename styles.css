@@ -1,0 +1,65 @@
+/* CSS Custom Property used to size the CSS Grid at run-time */
+:root {
+  --size: 4;                 /* default; JS will overwrite */
+}
+
+/* ---- global styles ---- */
+body {
+  margin: 0;
+  padding: 1rem;
+  font-family: system-ui, sans-serif;
+  background: #222;
+  color: #eee;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+}
+h1      { margin: 0 0 1rem; }
+.status { margin-bottom: 1rem; }
+
+/* ---- toolbar ---- */
+.toolbar {
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+button,
+select {
+  padding: .5rem .75rem;
+  background: #444;
+  color: #eee;
+  border: 1px solid #666;
+  border-radius: .25rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+button:hover { background: #666; }
+
+/* ---- game board ---- */
+.board {
+  width: 100%;
+  max-width: 30rem;
+  aspect-ratio: 1 / 1;                       /* keep square */
+  display: grid;
+  grid-template-columns: repeat(var(--size), 1fr);
+  gap: .25rem;
+}
+
+/* ---- individual cells ---- */
+.cell {
+  background: #111;
+  border: 2px solid #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(1rem, 5vw, 3rem);
+  user-select: none;
+  cursor: pointer;
+  transition: background .2s ease-in;
+}
+.cell:hover        { background: #333; }
+.cell.win          { background: #006400; color: #fff; }
+.cell.draw         { background: #444; }

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Online Tic-Tac-Toe 4×4 / 5×5</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Multiplayer Tic-Tac-Toe</h1>
+
+  <div class="toolbar">
+    <label>
+      Board
+      <select id="sizeSelect">
+        <option value="4">4 × 4</option>
+        <option value="5">5 × 5</option>
+      </select>
+    </label>
+    <button id="btnStart">Create / Join</button>
+    <button id="btnReset" disabled>Reset</button>
+  </div>
+
+  <p id="status" class="status">⏳ Not connected …</p>
+  <div id="board" class="board"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
