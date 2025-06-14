@@ -77,4 +77,4 @@ wss.on('connection', ws => {
 /* ---------- start server ---------- */
 const PORT = process.env.PORT || 8080;
 http.listen(PORT, () =>
-  console.log(`✅  Live at http://localhost:${PORT}`));
+  console.log(`Live at http://localhost:${PORT}`));

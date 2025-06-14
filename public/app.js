@@ -1,4 +1,3 @@
-import { createGame, applyMove } from '../game.js';   // note the “..”
 
 // ------------- dynamic URL -------------
 const WS_URL = `${location.origin.replace(/^http/, 'ws')}`;
