@@ -13,23 +13,18 @@ const btnReset    = document.getElementById('btnReset');
  *  Sync Board-size dropdown with Mode choice
  * ########################################### */
 const fullSizeOptionsHTML = sizeSelect.innerHTML;
-
 function syncSizeLock() {
   const isUltimate = modeSelect.value === 'ultimate';
-
   if (isUltimate) {
     sizeSelect.innerHTML = '<option value="3">3 × 3</option>';
     sizeSelect.value     = '3';
-    sizeSelect.disabled  = true;          // grey-out
+    sizeSelect.disabled  = true;
   } else {
-    if (sizeSelect.innerHTML !== fullSizeOptionsHTML) {
+    if (sizeSelect.innerHTML !== fullSizeOptionsHTML)
       sizeSelect.innerHTML = fullSizeOptionsHTML;
-    }
     sizeSelect.disabled = false;
   }
 }
-
-/* ---- initial defaults + first call ---- */
 sizeSelect.value = '3';
 modeSelect.value = 'classic';
 syncSizeLock();
@@ -38,7 +33,7 @@ modeSelect.addEventListener('change', syncSizeLock);
 /* ---------- helpers ---------- */
 const setStatus = txt => (statusEl.textContent = txt);
 
-/* ---- classic board builder ---- */
+/* ---------- board builders ---------- */
 function buildClassic(n) {
   boardEl.className = 'board';
   boardEl.style.setProperty('--size', n);
@@ -50,8 +45,6 @@ function buildClassic(n) {
     boardEl.appendChild(d);
   }
 }
-
-/* ---- ultimate board builder ---- */
 function buildUltimate() {
   boardEl.className = 'macro ultimate';
   boardEl.innerHTML = '';
@@ -70,7 +63,7 @@ function buildUltimate() {
 }
 
 /* ---------- renderers ---------- */
-function renderClassic(g, me) {
+function renderClassic(g, me, players) {          // NEW param
   if (boardEl.dataset.currentSize != g.size) {
     buildClassic(g.size);
     boardEl.dataset.currentSize = g.size;
@@ -80,13 +73,13 @@ function renderClassic(g, me) {
     c.classList.toggle('win',  g.winningLine?.includes(i));
     c.classList.toggle('draw', g.over && !g.winner);
   });
-  statusEl.textContent = g.over
-    ? (g.winner ? `🏆 Player ${g.winner} wins!` : '🤝 Draw!')
-    : (me === g.turn ? '✅ Your turn' : '⏳ Waiting …');
+  statusEl.textContent =
+      players < 2 ? '⏳ Waiting for opponent…'
+    : g.over      ? (g.winner ? `🏆 Player ${g.winner} wins!` : '🤝 Draw!')
+    : me === g.turn ? '✅ Your turn' : '⏳ Opponent’s turn …';
   btnReset.disabled = !g.over;
 }
-
-function renderUltimate(g, me) {
+function renderUltimate(g, me, players) {        // NEW param
   if (!boardEl.classList.contains('ultimate')) buildUltimate();
   [...boardEl.querySelectorAll('.local-board')].forEach((lb, l) => {
     lb.classList.toggle('local-active',
@@ -98,14 +91,15 @@ function renderUltimate(g, me) {
       cell.textContent = g.locals[l][c] ?? '';
     });
   });
-  statusEl.textContent = g.over
-    ? (g.winner ? `🏆 Player ${g.winner} wins!` : '🤝 Draw!')
-    : (me === g.turn ? '✅ Your turn' : '⏳ Waiting …');
+  statusEl.textContent =
+      players < 2 ? '⏳ Waiting for opponent…'
+    : g.over      ? (g.winner ? `🏆 Player ${g.winner} wins!` : '🤝 Draw!')
+    : me === g.turn ? '✅ Your turn' : '⏳ Opponent’s turn …';
   btnReset.disabled = !g.over;
 }
 
 /* ---------- WebSocket glue ---------- */
-let ws, me, game;
+let ws, me, game, players = 1;                   // NEW players count
 
 function connect(size, mode) {
   ws = new WebSocket(WS_URL);
@@ -113,24 +107,23 @@ function connect(size, mode) {
     ws.send(JSON.stringify({ type:'join', boardSize:size, mode })));
 
   ws.addEventListener('message', e => {
-  const m = JSON.parse(e.data);
+    const m = JSON.parse(e.data);
 
-  if (m.type === 'init') {
-    me   = m.playerIndex;                 // <-- keep this ONLY here
-    game = m.game;
-    (game.mode === 'ultimate' ? renderUltimate : renderClassic)(game, me);
-    return;
-  }
-
-  if (m.type === 'state') {
-    game = m.game;
-    (game.mode === 'ultimate' ? renderUltimate : renderClassic)(game, me);
-    return;
-  }
-
-  if (m.type === 'error') alert(m.reason);
-});
-
+    if (m.type === 'init') {
+      me      = m.playerIndex;
+      players = m.players ?? 1;                // NEW
+      game    = m.game;
+    }
+    if (m.type === 'state') {
+      players = m.players ?? players;          // NEW
+      game    = m.game;
+    }
+    if (m.type === 'init' || m.type === 'state') {
+      const render = game.mode === 'ultimate' ? renderUltimate : renderClassic;
+      render(game, me, players);               // pass players
+    }
+    if (m.type === 'error') alert(m.reason);
+  });
 
   ws.addEventListener('close', () => {
     setStatus('🔌 Disconnected');
@@ -142,10 +135,8 @@ function connect(size, mode) {
 btnStart.onclick = () => {
   const mode = modeSelect.value;
   const size = mode === 'ultimate' ? 3 : +sizeSelect.value;
-
   if (mode === 'ultimate') buildUltimate();
   else                     buildClassic(size);
-
   if (ws?.readyState === WebSocket.OPEN) ws.close();
   connect(size, mode);
 };
@@ -154,9 +145,9 @@ btnReset.onclick = () =>
   ws?.send(JSON.stringify({ type: 'reset' }));
 
 boardEl.onclick = e => {
+  if (players < 2) return;                      // NEW  (ignore until 2 joined)
   const cell = e.target.closest('.cell');
   if (!cell || !ws || !game) return;
-
   if (game.mode === 'ultimate') {
     const local = +cell.parentElement.dataset.local;
     const idx   = +cell.dataset.cell;
