@@ -1,7 +1,7 @@
 import express from 'express';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
-import { createGame, applyMove } from './game.js';
+import { createGame, applyMove, createUltimateGame, applyUltimateMove } from './game.js';
 
 const app  = express();
 const http = createServer(app);
@@ -27,11 +27,14 @@ wss.on('connection', ws => {
 
     /* ---- join ---- */
     if (m.type === 'join') {
-      const key   = 'size' + m.boardSize;
+      const key   = 'size' + m.boardSize + m.mode;
       ws.lobbyKey = key;
 
       const lobby = lobbies.get(key) ?? {
-        game   : createGame(m.boardSize),
+        game   : (m.mode==='ultimate'
+                  ? createUltimateGame()
+                  : createGame(m.boardSize)),
+        mode   : m.mode, 
         clients: []
       };
       if (lobby.clients.length >= lobby.game.symbols.length) {
@@ -54,9 +57,14 @@ wss.on('connection', ws => {
 
     /* ---- move ---- */
     if (m.type === 'move') {
-      if (lobby.game.over || lobby.game.turn !== ws.playerIdx) return;
-      lobby.game = applyMove(lobby.game, m.index);
-      broadcast(lobby.clients, { type: 'state', game: lobby.game });
+      const lobby = lobbies.get(ws.lobbyKey);
+      if (!lobby || lobby.game.over || lobby.game.turn !== ws.playerIdx) return;
+
+      lobby.game = lobby.mode === 'ultimate'
+        ? applyUltimateMove(lobby.game, m.local, m.cell)   // local + cell
+        : applyMove       (lobby.game, m.index);           // classic index
+
+      broadcast(lobby.clients, { type:'state', game:lobby.game });
     }
 
     /* ---- reset ---- */
