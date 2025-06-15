@@ -38,17 +38,20 @@ select {
 }
 button:hover { background: #666; }
 
-/* ---- game board ---- */
+/* ---- classic game board ---- */
 .board {
   width: 100%;
   max-width: 30rem;
-  aspect-ratio: 1 / 1;                       /* keep square */
+  aspect-ratio: 1 / 1;                       /* stay square */
   display: grid;
   grid-template-columns: repeat(var(--size), 1fr);
+  grid-template-rows:    repeat(var(--size), 1fr);   /* NEW */
   gap: .25rem;
+  min-width : 0;          /* NEW */
+  min-height: 0;          /* NEW */
 }
 
-/* ---- individual cells ---- */
+/* ---- individual cells (shared) ---- */
 .cell {
   background: #111;
   border: 2px solid #555;
@@ -57,21 +60,31 @@ button:hover { background: #666; }
   justify-content: center;
   width: 100%;
   height: 100%;
-  font-size: clamp(1rem, 5vw, 3rem);
+  font-size: clamp(0.8rem, 4vmin, 2.2rem);   /* NEW clamp matches Ultimate */
   user-select: none;
   cursor: pointer;
   transition: background .2s ease-in;
+  min-width : 0;          /* NEW */
+  min-height: 0;          /* NEW */
 }
 .cell:hover        { background: #333; }
 .cell.win          { background: #006400; color: #fff; }
 .cell.draw         { background: #444; }
 
+/* ---- Ultimate layout ---- */
+.macro            { display:grid; grid-template:repeat(3,1fr)/repeat(3,1fr); gap:.6rem;
+                    max-width: 60vmin; width: 100%; aspect-ratio: 1 / 1; }
+.local-board      { display:grid; grid-template:repeat(3,1fr)/repeat(3,1fr); gap:2px;
+                    background:#555; aspect-ratio: 1 / 1; }
+.local-board.winX { background:#065f1e; }
+.local-board.winO { background:#801515; }
+.local-board.lock { opacity:.4; pointer-events:none; }
+.local-active     { outline:4px solid #fff; }
 
-/* --- ultimate layout --- */
-.macro           { display:grid; grid-template:repeat(3,1fr)/repeat(3,1fr); gap:.6rem;
-                  max-width: 60vmin; width: 100%; aspect-ratio: 1 / 1;}
-.local-board     { display:grid; grid-template:repeat(3,1fr)/repeat(3,1fr); gap:2px; background:#555; aspect-ratio: 1 / 1;}
-.local-board.winX{ background:#065f1e; }   /* or any colour */
-.local-board.winO{ background:#801515; }
-.local-board.lock{ opacity:.4; pointer-events:none; }
-.local-active    { outline:4px solid #fff; }
+/* --- keep every square rigid, even when big text appears --- */
+.local-board,
+.cell {
+  min-width : 0;          /* prevent grid track from expanding */
+  min-height: 0;
+}
+.cell { overflow:hidden; font-size: clamp(0.8rem, 4vmin, 2.2rem); }
